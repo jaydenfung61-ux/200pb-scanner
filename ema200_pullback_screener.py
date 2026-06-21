@@ -91,25 +91,16 @@ def get_nasdaq100_tickers() -> list[str]:
 
 
 def get_tsx_composite_tickers() -> list[str]:
-    """S&P/TSX Composite via iShares XIC ETF holdings CSV."""
-    try:
-        headers = {"User-Agent": "Mozilla/5.0"}
-        url = (
-            "https://www.blackrock.com/ca/individual/en/products/239837/"
-            "ishares-sptsx-capped-composite-index-etf/1462879576979.ajax"
-            "?fileType=csv&fileName=XIC_holdings&dataType=fund"
-        )
-        r = requests.get(url, headers=headers, verify=False, timeout=20)
-        df = pd.read_csv(io.StringIO(r.text), skiprows=9)
-        tickers = (
-            df[df.get("Asset Class", pd.Series(dtype=str)) == "Equity"]["Ticker"]
-            .dropna()
-            .str.strip()
-            .tolist()
-        )
-        return [f"{t}.TO" if not t.endswith(".TO") else t for t in tickers if t]
-    except Exception:
-        return []
+    """S&P/TSX Composite (~220 stocks) via Wikipedia constituent table."""
+    headers = {"User-Agent": "Mozilla/5.0"}
+    r = requests.get(
+        "https://en.wikipedia.org/wiki/S%26P/TSX_Composite_Index",
+        headers=headers, verify=False, timeout=15,
+    )
+    tables = pd.read_html(io.StringIO(r.text))
+    df = next(t for t in tables if "Ticker" in t.columns and len(t) >= 200)
+    tickers = df["Ticker"].dropna().str.strip().tolist()
+    return [f"{t}.TO" if not t.endswith(".TO") else t for t in tickers]
 
 
 # ── Market Gate ───────────────────────────────────────────────────────────────
