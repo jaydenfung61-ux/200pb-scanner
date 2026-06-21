@@ -50,6 +50,17 @@ def get_sp500_tickers() -> list[str]:
     return df["Symbol"].str.replace(".", "-", regex=False).tolist()
 
 
+def get_dji_tickers() -> list[str]:
+    headers = {"User-Agent": "Mozilla/5.0"}
+    r = requests.get(
+        "https://en.wikipedia.org/wiki/Dow_Jones_Industrial_Average",
+        headers=headers, verify=False, timeout=15,
+    )
+    tables = pd.read_html(io.StringIO(r.text))
+    df = next(t for t in tables if "Symbol" in t.columns and len(t) >= 25)
+    return df["Symbol"].str.replace(".", "-", regex=False).tolist()
+
+
 def get_tsx_tickers() -> list[str]:
     headers = {"User-Agent": "Mozilla/5.0"}
     r = requests.get(
@@ -210,8 +221,9 @@ def main() -> None:
     print("\n[2/4] Fetching universe")
     sp500 = get_sp500_tickers()
     tsx60 = get_tsx_tickers()
-    tickers = sp500 + tsx60
-    print(f"      {len(sp500)} S&P 500  +  {len(tsx60)} TSX 60  =  {len(tickers)} total")
+    dji   = get_dji_tickers()
+    tickers = list(dict.fromkeys(sp500 + tsx60 + dji))  # deduplicate, preserve order
+    print(f"      {len(sp500)} S&P 500  +  {len(tsx60)} TSX 60  +  {len(dji)} DJI  =  {len(tickers)} total (after dedup)")
 
     # 3 — Download 14 months (need 252 days for HH/HL + 200-day EMA warmup)
     print("\n[3/4] Downloading 14 months of price/volume data…")
