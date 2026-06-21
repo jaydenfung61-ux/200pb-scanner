@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 200 EMA Pullback Screener
-Universe : S&P 500 + TSX 60
+Universe : NYSE + NASDAQ + TSX (full exchange listings)
 Strategy : Confirmed uptrend stocks pulling back to their 200-day EMA
 
 Filters:
@@ -40,31 +40,56 @@ MIN_ADV         = 1_000_000
 
 # ── Universe ──────────────────────────────────────────────────────────────────
 
-def get_sp500_tickers() -> list[str]:
+_BAD_CHARS = set("$^+/~!")   # symbols containing these are warrants, notes, etc.
+
+def _clean_us(symbols: pd.Series) -> list[str]:
+    """Normalise US ticker symbols — drop non-equity suffixes, fix Berkshire-style spaces."""
+    out = []
+    for s in symbols.dropna().str.strip():
+        if not s or any(c in s for c in _BAD_CHARS) or s.startswith("File"):
+            continue
+        out.append(s.replace(" ", "-"))   # e.g. "BRK A" → "BRK-A"
+    return out
+
+
+def get_nyse_tickers() -> list[str]:
+    """All common-stock listings on NYSE from NASDAQ trader file."""
     headers = {"User-Agent": "Mozilla/5.0"}
     r = requests.get(
-        "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
-        headers=headers, verify=False, timeout=15,
+        "https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt",
+        headers=headers, verify=False, timeout=30,
     )
-    df = pd.read_html(io.StringIO(r.text))[0]
-    return df["Symbol"].str.replace(".", "-", regex=False).tolist()
+    df = pd.read_csv(io.StringIO(r.text), sep="|")
+    mask = (df["Exchange"] == "N") & (df["Test Issue"] == "N") & (df["ETF"] == "N")
+    return _clean_us(df[mask]["ACT Symbol"])
+
+
+def get_nasdaq_tickers() -> list[str]:
+    """All common-stock listings on NASDAQ from NASDAQ trader file."""
+    headers = {"User-Agent": "Mozilla/5.0"}
+    r = requests.get(
+        "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt",
+        headers=headers, verify=False, timeout=30,
+    )
+    df = pd.read_csv(io.StringIO(r.text), sep="|")
+    mask = (df["Test Issue"] == "N") & (df["ETF"] == "N")
+    return _clean_us(df[mask]["Symbol"])
 
 
 def get_tsx_tickers() -> list[str]:
+    """All listings on TSX via TMX company-directory JSON API."""
     headers = {"User-Agent": "Mozilla/5.0"}
     r = requests.get(
-        "https://en.wikipedia.org/wiki/S%26P/TSX_60",
-        headers=headers, verify=False, timeout=15,
+        "https://www.tsx.com/json/company-directory/search/tsx/%5E*",
+        headers=headers, verify=False, timeout=30,
     )
-    tables = pd.read_html(io.StringIO(r.text))
-    # Find the table that has a Symbol column with 60 rows
-    df = next(t for t in tables if "Symbol" in t.columns and len(t) >= 50)
-    tickers = df["Symbol"].dropna().str.strip().tolist()
-    # Replace dots in class suffixes (e.g. RCI.B → RCI-B) then append .TO
-    return [
-        t if t.endswith(".TO") else f"{t.replace('.', '-')}.TO"
-        for t in tickers
-    ]
+    results = r.json().get("results", [])
+    tickers = []
+    for item in results:
+        symbol = item.get("symbol", "").strip()
+        if symbol:
+            tickers.append(f"{symbol.replace('.', '-')}.TO")
+    return tickers
 
 
 # ── Market Gate ───────────────────────────────────────────────────────────────
@@ -178,7 +203,7 @@ def screen_ticker(ticker: str, data) -> dict | None:
 
         return {
             "Ticker":        ticker,
-            "Exchange":      "TSX" if ticker.endswith(".TO") else "US",
+            "Exchange":      "TSX" if ticker.endswith(".TO") else "US (NYSE/NASDAQ)",
             "Price":         round(price, 2),
             "EMA200":        round(ema200_val, 2),
             "% from EMA":    pct_from_ema,
@@ -208,10 +233,11 @@ def main() -> None:
 
     # 2 — Universe
     print("\n[2/4] Fetching universe")
-    sp500 = get_sp500_tickers()
-    tsx60 = get_tsx_tickers()
-    tickers = sp500 + tsx60
-    print(f"      {len(sp500)} S&P 500  +  {len(tsx60)} TSX 60  =  {len(tickers)} total")
+    nyse   = get_nyse_tickers()
+    nasdaq = get_nasdaq_tickers()
+    tsx    = get_tsx_tickers()
+    tickers = list(dict.fromkeys(nyse + nasdaq + tsx))   # deduplicate, preserve order
+    print(f"      {len(nyse)} NYSE  +  {len(nasdaq)} NASDAQ  +  {len(tsx)} TSX  =  {len(tickers)} total")
 
     # 3 — Download 14 months (need 252 days for HH/HL + 200-day EMA warmup)
     print("\n[3/4] Downloading 14 months of price/volume data…")
@@ -240,7 +266,7 @@ def main() -> None:
     print()
     print(df.to_string())
 
-    fname = f"/Users/jaydenfung/ema200_pullback_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+    fname = f"ema200_pullback_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
     df.to_csv(fname, index=True)
     print(f"\n  Saved → {fname}\n")
 
