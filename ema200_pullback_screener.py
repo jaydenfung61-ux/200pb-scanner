@@ -266,7 +266,7 @@ def main() -> None:
     print()
     print(df.to_string())
 
-    fname = f"/Users/jaydenfung/ema200_pullback_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+    fname = f"ema200_pullback_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
     df.to_csv(fname, index=True)
     print(f"\n  Saved → {fname}\n")
 
