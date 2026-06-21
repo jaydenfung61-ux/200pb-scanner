@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 200 EMA Pullback Screener
-Universe : S&P 500 + TSX 60
+Universe : NYSE
 Strategy : Confirmed uptrend stocks pulling back to their 200-day EMA
 
 Filters:
@@ -40,32 +40,88 @@ MIN_ADV         = 1_000_000
 
 # ── Universe ──────────────────────────────────────────────────────────────────
 
-_SP500_TICKERS = [
-    "MMM","AOS","ABT","ABBV","ACN","ADBE","AMD","AES","AFL","A","APD","ABNB","AKAM","ALB","ARE","ALGN","ALLE","LNT","ALL","GOOGL","GOOG","MO","AMZN","AMCR","AEE","AAL","AEP","AXP","AIG","AMT","AWK","AMP","AME","AMGN","APH","ADI","ANSS","AON","APA","APO","AAPL","AMAT","APTV","ACGL","ADM","ANET","AJG","AIZ","T","ATO","ADSK","ADP","AZO","AVB","AVY","AXON","BKR","BALL","BAC","BAX","BDX","BRK-B","BBY","TECH","BIIB","BLK","BX","BK","BA","BKNG","BSX","BMY","AVGO","BR","BRO","BF-B","BLDR","CHRW","CDNS","CZR","CPT","CPB","COF","CAH","KMX","CCL","CARR","CTLT","CAT","CBOE","CBRE","CDW","CE","COR","CNC","CNX","CDAY","CF","CRL","SCHW","CHTR","CVX","CMG","CB","CHD","CI","CINF","CTAS","CSCO","C","CFG","CLX","CME","CMS","KO","CTSH","CL","CMCSA","CMA","CAG","COP","ED","STZ","CEG","COO","CPRT","GLW","CTVA","CSGP","COST","CTRA","CCI","CSX","CMI","CVS","DHR","DRI","DVA","DAY","DE","DAL","DVN","DXCM","FANG","DLR","DFS","DG","DLTR","D","DPZ","DOV","DOW","DHI","DTE","DUK","DD","EMN","ETN","EBAY","ECL","EIX","EW","EA","ELV","EMR","ENPH","ETR","EOG","EPAM","EQT","EFX","EQIX","EQR","ESS","EL","ETSY","EG","EVRST","ES","EXC","EXPE","EXPD","EXR","XOM","FFIV","FDS","FICO","FAST","FRT","FDX","FIS","FITB","FSLR","FE","FI","FMC","F","FTNT","FTV","FOXA","FOX","BEN","FCX","GRMN","IT","GE","GEHC","GEV","GEN","GNRC","GD","GIS","GM","GPC","GILD","GS","HAL","HIG","HAS","HCA","DOC","HSIC","HSY","HES","HPE","HLT","HOLX","HD","HON","HRL","HST","HWM","HPQ","HUBB","HUM","HBAN","HII","IBM","IEX","IDXX","ITW","INCY","IR","PODD","INTC","ICE","IFF","IP","IPG","INTU","ISRG","IVZ","INVH","IQV","IRM","JBHT","JBL","JKHY","J","JNJ","JCI","JPM","JNPR","K","KVUE","KDP","KEY","KEYS","KMB","KIM","KMI","KLAC","KHC","KR","LHX","LH","LRCX","LW","LVS","LDOS","LEN","LLY","LIN","LYV","LKQ","LMT","L","LOW","LULU","LYB","MTB","MRO","MPC","MKTX","MAR","MMC","MLM","MAS","MA","MTCH","MKC","MCD","MCK","MDT","MRK","META","MET","MTD","MGM","MCHP","MU","MSFT","MAA","MRNA","MHK","MOH","TAP","MDLZ","MPWR","MNST","MCO","MS","MOS","MSI","MSCI","NDAQ","NTAP","NFLX","NEM","NWSA","NWS","NEE","NKE","NI","NDSN","NSC","NTRS","NOC","NCLH","NRG","NUE","NVDA","NVR","NXPI","ORLY","OXY","ODFL","OMC","ON","OKE","ORCL","OTIS","PCAR","PKG","PLTR","PH","PAYX","PAYC","PYPL","PNR","PEP","PFE","PCG","PM","PSX","PNW","PNC","POOL","PPG","PPL","PFG","PG","PGR","PRU","PEG","PTC","PSA","PHM","QRVO","PWR","QCOM","DGX","RL","RJF","RTX","O","REG","REGN","RF","RSG","RMD","RVTY","ROK","ROL","ROP","ROST","RCL","SPGI","CRM","SBAC","SLB","STX","SRE","NOW","SHW","SPG","SWKS","SJM","SW","SNA","SOLV","SO","LUV","SWK","SBUX","STT","STLD","STE","SYK","SMCI","SYF","SNPS","SYY","TMUS","TROW","TTWO","TPR","TRGP","TGT","TEL","TDY","TFX","TER","TSLA","TXN","TPL","TXT","TMO","TJX","TSCO","TT","TDG","TRV","TRMB","TFC","TYL","TSN","USB","UBER","UDR","ULTA","UNP","UAL","UPS","URI","UNH","UHS","VLO","VTR","VLTO","VRSN","VRSK","VZ","VRTX","VTRS","VICI","V","VST","VMC","WRB","GWW","WAB","WBA","WMT","DIS","WBD","WM","WAT","WEC","WFC","WELL","WST","WDC","WHR","WRK","WY","WYNN","XEL","XYL","YUM","ZBRA","ZBH","ZTS",
+# NYSE-listed common stocks (liquid names across all sectors)
+_NYSE_TICKERS = [
+    # Financials
+    "JPM","BAC","WFC","C","GS","MS","AXP","BLK","BX","KKR","APO","AIG","MET","PRU","AFL","ALL",
+    "TRV","CB","HIG","L","GL","LNC","UNM","PFG","CINF","AIZ","BK","STT","NTRS","RF","KEY","CFG",
+    "MTB","USB","FHN","HBAN","SNV","CMA","FNB","BOH","GBCI","IBOC","NYCB","OFG","PACW","BANC",
+    "FHB","CVBF","WAFD","WSFS","FFIN","BOKF","UMBF","WBS","FULT","PBCT","TCF","CBSH","ONB",
+    "TRMK","SFNC","BUSE","HOPE","HAFC","BANR","HTLF","QCRH","FMBH","NBHC","CATC","SBCF",
+    "ICE","CME","CBOE","NDAQ","MKTX","VIRT","LAZ","EVR","HLI","MC","PJT","GHL","PIPR",
+    "IVZ","AMG","WDR","VRTS","CNS","APAM","NOAH","VCNX",
+    # Technology (NYSE-listed)
+    "IBM","HPE","HPQ","DELL","NCR","JNPR","GLW","TEL","APH","CDW","LDOS","SAIC","CSRA",
+    "DXC","ACN","ADP","PAYX","FIS","FISV","FLT","WEX","EVTC","WU","MDP","XRX",
+    # Healthcare
+    "JNJ","PFE","MRK","ABT","BMY","LLY","MDT","BDX","BAX","EW","SYK","BSX","ZBH","HAE",
+    "XRAY","HOLX","VAR","NVCR","TFX","OMI","PKI","DHR","TMO","WAT","A","IQV","IQVIA",
+    "HCA","THC","UHS","CYH","ENSG","SEM","ADUS","AMED","LH","DGX","EVHC","PDCO","HSIC",
+    "MCK","CAH","ABC","CVS","WBA","ESRX","ANTM","UNH","CI","HUM","CNC","MOH","WCG","HQY",
+    # Energy
+    "XOM","CVX","COP","EOG","PXD","DVN","MRO","APA","HES","VLO","PSX","MPC","DK","PBF",
+    "PARR","CLMT","SUN","CVR","DINO","HollyFrontier","OXY","OVV","FANG","CLR","WPX","CPE",
+    "CXO","JAX","SM","REI","ESTE","MTDR","MGY","RRC","EQT","CNX","AR","SWN","COG","CHK",
+    "WTI","NOG","CIVI","PDCE","BATL","KOS","VNOM","BSM",
+    "SLB","HAL","BKR","NOV","FTI","WHD","LBRT","PTEN","HP","NE","DO","VAL","RIG",
+    "OKE","WMB","KMI","ET","EPD","MMP","PAA","TRGP","DT","ENLC","CEQP","SMLP",
+    "SO","DUK","NEE","AEP","EXC","D","ED","FE","PCG","EIX","PEG","PPL","CMS","NI",
+    "AES","ETR","WEC","DTE","LNT","EVRG","AEE","PNW","XEL","IDA","AVA","NWE","POR",
+    # Consumer Discretionary
+    "AMZN","HD","LOW","TGT","WMT","COST","TJX","ROST","M","KSS","JWN","DDS","SKT",
+    "SPG","MAC","CBL","WPG","PEI","TCO","BRX","KIM","REG","SITC","WRI","EQY","ROIC",
+    "MCD","YUM","QSR","DRI","TXRH","CAKE","DPZ","PZZA","JACK","WEN","CMG","SBUX",
+    "NKE","VFC","PVH","RL","TPR","HBI","G","COH","KOR","LEVI","UAA","UA","SKX","OXM",
+    "GM","F","TM","HMC","RACE","PAG","KMX","AN","LAD","ABG","GPI","SAH","CVNA","CAR","HTZ",
+    "CCL","RCL","NCLH","MHO","MDC","PHM","LEN","DHI","TOL","NVR","BZH","KBH","MHO","HOV",
+    "LKQ","AAP","AZO","ORLY","BWA","LEA","MGA","ALV","TEN","WNC","XHB",
+    # Consumer Staples
+    "PG","KO","PEP","PM","MO","BTI","MDLZ","GIS","K","CPB","CAG","SJM","HRL","MKC",
+    "CL","CHD","CLX","EL","REV","AVP","COTY","IFF","SYY","US","USFD","PFGC","CHEF",
+    "KR","SFM","WMT","TGT","ACI","SVU","VLGEA","WEIS","INGR","FDP","BG","ADM","CALM",
+    "TSN","HRL","PPC","SAFM","MFI","SEB","LANC","JJSF","THS","SMPL","POST","TWNK",
+    # Industrials
+    "HON","GE","MMM","RTX","LMT","BA","NOC","GD","L3H","TXT","HEI","HEICO","TDG",
+    "SPR","KTOS","AJRD","CW","MOOG","DRS","HXL","TDY","FLIR","ESLT","LDOS","SAIC",
+    "CAT","DE","CMI","PCAR","NAV","ALSN","TRN","GBX","WAB","TT","ITW","EMR","ROK",
+    "ROP","CARR","OTIS","JCI","AAON","WTS","AOS","ACCO","MWA","NVT","REXL",
+    "UPS","FDX","XPO","SAIA","ODFL","JBHT","KNX","CHRW","EXPD","FWRD","ECHO",
+    "GWW","MSC","FAST","SNA","KMT","TKR","ATI","ARNC","CMC","NUE","STLD","X","CLF",
+    "AME","PH","DANAHER","IEX","TRMB","FTV","GNSS","RBC","NDSN","EFX","EXPO","MASI",
+    "WM","RSG","WCN","CVA","SRCL","CARG","CLH","US","HDSN",
+    # Materials
+    "LIN","APD","PPG","SHW","ECL","EMN","LYB","HUN","CC","TROX","VNTR","ASIX","KRA",
+    "NEM","AEM","ABX","AU","AUY","GFI","KGC","EGO","IAG","AGI","OR","WPM","FNV","SA",
+    "FCX","SCCO","TCK","HBM","CS","TECK","ACH","CENX","AA","KALU","CRS","ATI","ARNC",
+    "IP","PKG","SEE","SON","SLGN","BERY","PTVE","MERC","CLW","GAPFF","UFI","FUL","IFF",
+    "MLM","VMC","SUM","EXP","MDU","USG","USCR","SLCA","BOOM","STRL","GVP",
+    # Real Estate
+    "AMT","CCI","EQIX","SBAC","DLR","QTS","COR","IRM","CONE","NSA","LSI","CUBE",
+    "EXR","PSA","LIFE","SSS","SP","JELD","REXNORD",
+    "EQR","AVB","MAA","UDR","CPT","AIV","ACC","EDR","IRT","NXRT","APTS","BRT",
+    "PLD","DRE","FR","EGP","STAG","TRNO","REXR","IIPR","COLD","GOOD","NLCP",
+    "O","NNN","SRC","EPRT","ADC","PINE","GTY","NTST","VICI","MPW","GMRE","CHCT",
+    "BXP","SLG","KRC","HIW","PKY","CUZ","PDM","DEA","JBGS","VNO","SFO","CLI",
+    "SPG","MAC","TCO","BRX","KIM","REG","AKR","CBL","PREIT","WPG","WPT",
+    "WELL","VTR","OHI","LTC","HR","SNH","CTRE","NHI","SBRA","CSQ","SHO","UHT",
+    "HST","PK","RHP","SHO","CHSP","APLE","CLDT","CHATM","INN","XENIA","BRAEMAR",
+    "SVC","ILPT","GMRE","LAND","AFIN","EPRT","BNL","NTST","RTL","NLCP",
+    # Utilities
+    "NEE","SO","DUK","AEP","EXC","D","ED","FE","PCG","EIX","PEG","PPL","CMS","NI",
+    "AES","ETR","WEC","DTE","LNT","EVRG","AEE","PNW","XEL","IDA","AVA","NWE","POR",
+    "SRE","ES","CNP","OGE","MGEE","AWR","CWT","MSEX","SJW","YORW","ARTNA","GWRS",
+    "AWK","WTR","WTRG","CWCO","GWRS","ARTNA","MSEX","YORW","SJW","CWT","AWR",
+    # Communication Services (NYSE-listed)
+    "T","VZ","LUMN","CTL","CNSL","SHEN","LMSA","LBRDKA","CABO","ATUS","WOW","LBRDK",
+    "DIS","FOX","FOXA","NWSA","NWS","CBS","VIAC","OMC","IPG","PUB","GCI","MDP","NYT",
+    "TWX","DISCA","DISCK","DISCB","AMC","CNK","RGC","IMAX","LGF-A","LGF-B","MCS",
 ]
-
-_TSX60_TICKERS = [
-    "ABX.TO","AEM.TO","AGF-B.TO","ALA.TO","AP-UN.TO","ARX.TO","ATD.TO","BAM.TO","BCE.TO","BN.TO",
-    "BNS.TO","CAE.TO","CAR-UN.TO","CCO.TO","CCL-B.TO","CHP-UN.TO","CM.TO","CNQ.TO","CNR.TO","CP.TO",
-    "CTC-A.TO","CVE.TO","DOL.TO","EMA.TO","ENB.TO","EQB.TO","FFH.TO","FM.TO","FNV.TO","FTS.TO",
-    "GIB-A.TO","GWO.TO","H.TO","IFC.TO","IMO.TO","K.TO","KXS.TO","L.TO","LB.TO","LUN.TO",
-    "MFC.TO","MG.TO","MRU.TO","NA.TO","NTR.TO","ONEX.TO","POU.TO","POW.TO","PPL.TO","RCI-B.TO",
-    "RY.TO","SAP.TO","SLF.TO","SNC.TO","SU.TO","T.TO","TD.TO","TRP.TO","WCN.TO","WPM.TO",
-]
-
-
-def get_sp500_tickers() -> list[str]:
-    return list(_SP500_TICKERS)
-
-
-def get_tsx_tickers() -> list[str]:
-    return list(_TSX60_TICKERS)
 
 
 # ── Market Gate ───────────────────────────────────────────────────────────────
 
 def check_market_gate() -> tuple[bool, str]:
-    proxies = ["SPY", "QQQ", "XIU.TO"]
+    proxies = ["SPY", "QQQ"]
     data = yf.download(proxies, period="3mo", progress=False, auto_adjust=True)
     failed = []
     for ticker in proxies:
@@ -76,7 +132,7 @@ def check_market_gate() -> tuple[bool, str]:
             failed.append(ticker)
     if failed:
         return False, f"Gate failed: {', '.join(failed)} below 50-day SMA"
-    return True, "SPY, QQQ, and XIU.TO all above 50-day SMA"
+    return True, "SPY and QQQ both above 50-day SMA"
 
 
 # ── Screening Filters ─────────────────────────────────────────────────────────
@@ -203,10 +259,8 @@ def main() -> None:
 
     # 2 — Universe
     print("\n[2/4] Fetching universe")
-    sp500 = get_sp500_tickers()
-    tsx60 = get_tsx_tickers()
-    tickers = sp500 + tsx60
-    print(f"      {len(sp500)} S&P 500  +  {len(tsx60)} TSX 60  =  {len(tickers)} total")
+    tickers = get_nyse_tickers()
+    print(f"      {len(tickers)} NYSE stocks")
 
     # 3 — Download 14 months (need 252 days for HH/HL + 200-day EMA warmup)
     print("\n[3/4] Downloading 14 months of price/volume data…")
