@@ -100,7 +100,7 @@ def get_tsx_composite_tickers() -> list[str]:
     tables = pd.read_html(io.StringIO(r.text))
     df = next(t for t in tables if "Ticker" in t.columns and len(t) >= 200)
     tickers = df["Ticker"].dropna().str.strip().tolist()
-    return [f"{t}.TO" if not t.endswith(".TO") else t for t in tickers]
+    return [f"{t.replace('.', '-')}.TO" if not t.endswith(".TO") else t for t in tickers]
 
 
 # ── Market Gate ───────────────────────────────────────────────────────────────
