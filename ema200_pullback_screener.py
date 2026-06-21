@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 200 EMA Pullback Screener
-Universe : S&P 500 + TSX 60
+Universe : S&P 500 + S&P 400 + Nasdaq 100 + TSX 60 + TSX Composite
 Strategy : Confirmed uptrend stocks pulling back to their 200-day EMA
 
 Filters:
@@ -57,14 +57,59 @@ def get_tsx_tickers() -> list[str]:
         headers=headers, verify=False, timeout=15,
     )
     tables = pd.read_html(io.StringIO(r.text))
-    # Find the table that has a Symbol column with 60 rows
     df = next(t for t in tables if "Symbol" in t.columns and len(t) >= 50)
     tickers = df["Symbol"].dropna().str.strip().tolist()
-    # Replace dots in class suffixes (e.g. RCI.B → RCI-B) then append .TO
     return [
         t if t.endswith(".TO") else f"{t.replace('.', '-')}.TO"
         for t in tickers
     ]
+
+
+def get_sp400_tickers() -> list[str]:
+    headers = {"User-Agent": "Mozilla/5.0"}
+    r = requests.get(
+        "https://en.wikipedia.org/wiki/List_of_S%26P_400_companies",
+        headers=headers, verify=False, timeout=15,
+    )
+    df = pd.read_html(io.StringIO(r.text))[0]
+    col = next(c for c in df.columns if c in ("Ticker", "Symbol", "Ticker symbol"))
+    return df[col].str.replace(".", "-", regex=False).tolist()
+
+
+def get_nasdaq100_tickers() -> list[str]:
+    headers = {"User-Agent": "Mozilla/5.0"}
+    r = requests.get(
+        "https://en.wikipedia.org/wiki/Nasdaq-100",
+        headers=headers, verify=False, timeout=15,
+    )
+    tables = pd.read_html(io.StringIO(r.text))
+    for t in tables:
+        col = next((c for c in t.columns if c in ("Ticker", "Symbol")), None)
+        if col and len(t) >= 90:
+            return t[col].str.replace(".", "-", regex=False).tolist()
+    return []
+
+
+def get_tsx_composite_tickers() -> list[str]:
+    """S&P/TSX Composite via iShares XIC ETF holdings CSV."""
+    try:
+        headers = {"User-Agent": "Mozilla/5.0"}
+        url = (
+            "https://www.blackrock.com/ca/individual/en/products/239837/"
+            "ishares-sptsx-capped-composite-index-etf/1462879576979.ajax"
+            "?fileType=csv&fileName=XIC_holdings&dataType=fund"
+        )
+        r = requests.get(url, headers=headers, verify=False, timeout=20)
+        df = pd.read_csv(io.StringIO(r.text), skiprows=9)
+        tickers = (
+            df[df.get("Asset Class", pd.Series(dtype=str)) == "Equity"]["Ticker"]
+            .dropna()
+            .str.strip()
+            .tolist()
+        )
+        return [f"{t}.TO" if not t.endswith(".TO") else t for t in tickers if t]
+    except Exception:
+        return []
 
 
 # ── Market Gate ───────────────────────────────────────────────────────────────
@@ -208,10 +253,22 @@ def main() -> None:
 
     # 2 — Universe
     print("\n[2/4] Fetching universe")
-    sp500 = get_sp500_tickers()
-    tsx60 = get_tsx_tickers()
-    tickers = sp500 + tsx60
-    print(f"      {len(sp500)} S&P 500  +  {len(tsx60)} TSX 60  =  {len(tickers)} total")
+    sp500     = get_sp500_tickers()
+    sp400     = get_sp400_tickers()
+    ndx100    = get_nasdaq100_tickers()
+    tsx60     = get_tsx_tickers()
+    tsx_comp  = get_tsx_composite_tickers()
+    seen = set()
+    tickers = []
+    for t in sp500 + sp400 + ndx100 + tsx60 + tsx_comp:
+        if t not in seen:
+            seen.add(t)
+            tickers.append(t)
+    print(
+        f"      {len(sp500)} S&P 500  +  {len(sp400)} S&P 400  +  "
+        f"{len(ndx100)} Nasdaq 100  +  {len(tsx60)} TSX 60  +  "
+        f"{len(tsx_comp)} TSX Composite  =  {len(tickers)} unique"
+    )
 
     # 3 — Download 14 months (need 252 days for HH/HL + 200-day EMA warmup)
     print("\n[3/4] Downloading 14 months of price/volume data…")
